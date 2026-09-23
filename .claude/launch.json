@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "squad-charge",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd /Users/abdullah/Projects/squad-charge && python3 -m http.server 8787"],
+      "port": 8787
+    }
+  ]
+}
