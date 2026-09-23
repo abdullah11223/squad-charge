@@ -14,14 +14,6 @@ function mulberry32(seed) {
   };
 }
 
-function shuffle(arr, rng) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
 // درجة "الضرر" التقريبية لكل نوع بوابة حمراء — تُستخدم لضمان وجود خيار أخف بكل مجموعة
 const HARM_SCORE = {
   subPercent: (v) => v, // 0.15 - 0.35
@@ -38,17 +30,18 @@ function makeBlueGate(rng) {
     const value = rng() < 0.5 ? 1.5 : 2;
     return { color: 'blue', type: 'multiply', value, label: `×${value}` };
   }
-  if (roll < 0.33) {
+  // ترقية السلاح أهم رافعة للنجاة (تقلل الجنود المفقودين بكل اشتباك)، فنرفع وزنها
+  if (roll < 0.45) {
     return { color: 'blue', type: 'weaponUp', value: 1, label: '+1 سلاح' };
   }
-  if (roll < 0.5) {
+  if (roll < 0.58) {
     return { color: 'blue', type: 'powerMerge', value: 1, label: 'دمج القوة' };
   }
-  if (roll < 0.65) {
+  if (roll < 0.7) {
     const pct = 20 + Math.round(rng() * 20); // 20-40%
     return { color: 'blue', type: 'fireRate', value: pct / 100, label: `سرعة +${pct}%` };
   }
-  const pct = 10 + Math.round(rng() * 20); // 10-30%
+  const pct = 15 + Math.round(rng() * 20); // 15-35%
   return { color: 'blue', type: 'addPercent', value: pct / 100, label: `+${pct}%` };
 }
 
@@ -119,22 +112,36 @@ export function generateLevel(L) {
   const harshChance = DIFFICULTY.harshGateChance(L);
   const isBossLevel = L % BOSS_LEVEL_INTERVAL === 0;
 
-  const enemyWaveCount = Math.min(4, 2 + Math.floor(L / 8));
+  const enemyWaveCount = Math.min(4, 2 + Math.floor(L / 12));
   const perWave = Math.max(2, Math.round(totalEnemies / enemyWaveCount));
-  const obstacleCount = L >= 10 ? 2 : 1;
+  const obstacleCount = L >= 20 ? 2 : 1;
+
+  // كل خطر (عدو أو عائق) لازم تسبقه بوابة واحدة على الأقل عشان يقدر اللاعب يبني
+  // قوته قبل ما يواجهه. والعوائق تحديدًا نوزّعها بالتناوب مع الأعداء (مو متلاصقة)
+  // عشان يكون فيه وقت تعافي بينها — تأكدنا من هذا الترتيب بمحاكاة فعلية
+  const hazards = [];
+  {
+    let oLeft = obstacleCount;
+    let eLeft = enemyWaveCount;
+    while (oLeft > 0 || eLeft > 0) {
+      if (oLeft > 0) {
+        hazards.push('obstacle');
+        oLeft--;
+      }
+      if (eLeft > 0) {
+        hazards.push('enemy');
+        eLeft--;
+      }
+    }
+  }
 
   const kinds = [];
-  for (let i = 0; i < gateGroupCount; i++) kinds.push('gate');
-  for (let i = 0; i < enemyWaveCount; i++) kinds.push('enemy');
-  for (let i = 0; i < obstacleCount; i++) kinds.push('obstacle');
-
-  shuffle(kinds, rng);
-  // نبدأ دايمًا بمجموعة بوابات عشان يقدر اللاعب يستعد قبل أول اشتباك
-  const firstGateIdx = kinds.indexOf('gate');
-  if (firstGateIdx > 0) {
-    kinds.splice(firstGateIdx, 1);
-    kinds.unshift('gate');
+  let hazardIdx = 0;
+  for (let i = 0; i < gateGroupCount; i++) {
+    kinds.push('gate');
+    if (hazardIdx < hazards.length) kinds.push(hazards[hazardIdx++]);
   }
+  while (hazardIdx < hazards.length) kinds.push(hazards[hazardIdx++]);
 
   // "y" هنا مسافة بوحدات العالم ثلاثي الأبعاد (محور Z) وليست بكسل
   const segments = [];
@@ -153,7 +160,7 @@ export function generateLevel(L) {
 
   if (isBossLevel) {
     y += 14;
-    segments.push(buildEnemyWave(totalEnemies * 2, enemyDamage * 3, y, true));
+    segments.push(buildEnemyWave(Math.round(totalEnemies * 1.6), Math.round(enemyDamage * 1.8), y, true));
   }
 
   y += 13;
