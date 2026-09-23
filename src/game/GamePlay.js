@@ -22,14 +22,18 @@ import {
   clamp,
 } from '../config/GameConfig.js';
 
-const BASE_SCROLL_SPEED = 4.2; // وحدات عالم/ثانية
-const CAMERA_HEIGHT = 3.4;
-const CAMERA_BACK_OFFSET = 4.6;
-const OBSTACLE_WARNING_RANGE = 5.5;
-const DRAG_SENSITIVITY = 0.013;
+const BASE_SCROLL_SPEED = 4.8; // وحدات عالم/ثانية عند المرحلة ١
+const SPEED_PER_LEVEL = 0.14; // تزيد السرعة الأساسية كل مرحلة — تحدي متصاعد
+const MAX_LEVEL_SPEED_BONUS = 3.4;
+const IN_LEVEL_RAMP = 0.35; // تسارع إضافي كل ما اقتربت من نهاية المرحلة نفسها
+const CAMERA_HEIGHT = 3.1;
+const CAMERA_BACK_OFFSET = 4.2;
+const CAMERA_LERP = 0.22; // كاميرا أسرع استجابة = تحكم أدق وأسرع
+const OBSTACLE_WARNING_RANGE = 4; // إنذار أقصر = وقت رد فعل أقل
+const DRAG_SENSITIVITY = 0.014;
 const ENEMY_ENGAGE_RANGE = 6.5; // الجنود يبدأون يطلقون على العدو من هالمسافة، قبل ما يوصلونه
 const FIREFIGHT_BURSTS = 5;
-const FIREFIGHT_BURST_INTERVAL = 130; // ms
+const FIREFIGHT_BURST_INTERVAL = 100; // ms
 
 export class GamePlay {
   constructor(root, level, callbacks) {
@@ -202,7 +206,10 @@ export class GamePlay {
     const nowMs = performance.now();
     const slowed = nowMs < this.slowUntilMs;
     const speedMult = slowed ? 0.45 : 1;
-    const deltaDist = BASE_SCROLL_SPEED * speedMult * dt;
+    const levelSpeed = BASE_SCROLL_SPEED + Math.min(MAX_LEVEL_SPEED_BONUS, this.level * SPEED_PER_LEVEL);
+    const progress = clamp(this.distance / this.levelData.finishY, 0, 1);
+    const rampMult = 1 + IN_LEVEL_RAMP * progress;
+    const deltaDist = levelSpeed * rampMult * speedMult * dt;
     this.distance += deltaDist;
 
     this.road.update(this.distance);
@@ -223,7 +230,7 @@ export class GamePlay {
 
   updateCamera() {
     const targetX = this.army.x;
-    this.camX += (targetX - this.camX) * 0.12;
+    this.camX += (targetX - this.camX) * CAMERA_LERP;
     this.camera.position.x = this.camX + this.shaker.state.x;
     this.camera.position.y = CAMERA_HEIGHT + this.shaker.state.y;
     this.camera.position.z = this.army.z + CAMERA_BACK_OFFSET;

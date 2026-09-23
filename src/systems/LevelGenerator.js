@@ -84,7 +84,8 @@ function ensureMildOption(gates, rng) {
 }
 
 function buildGateGroup(rng, harshChance, y) {
-  const count = rng() < 0.5 ? 2 : 3;
+  // ٣ بوابات أغلب الوقت — قرار أسرع وأدق مطلوب بدل خيار ثنائي بسيط
+  const count = rng() < 0.35 ? 2 : 3;
   const gates = [];
   for (let i = 0; i < count; i++) {
     const isBlue = rng() < 0.55;
