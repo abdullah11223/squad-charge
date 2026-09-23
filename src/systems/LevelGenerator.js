@@ -149,7 +149,9 @@ export function generateLevel(L) {
   let y = 18;
 
   for (const kind of kinds) {
-    y += 9.5 + rng() * 5.5;
+    // العوائق تجي أسرع بعد بوابتها (زي المرجع: عدة براميل متلاحقة) — تعديل إيقاع
+    // بصري بحت، ما يغيّر عتبة الكسر ولا صعوبة الحساب
+    y += kind === 'obstacle' ? 6 + rng() * 3 : 9.5 + rng() * 5.5;
     if (kind === 'gate') {
       segments.push(buildGateGroup(rng, harshChance, y));
     } else if (kind === 'enemy') {

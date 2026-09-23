@@ -26,8 +26,9 @@ const BASE_SCROLL_SPEED = 4.8; // وحدات عالم/ثانية عند المر
 const SPEED_PER_LEVEL = 0.14; // تزيد السرعة الأساسية كل مرحلة — تحدي متصاعد
 const MAX_LEVEL_SPEED_BONUS = 3.4;
 const IN_LEVEL_RAMP = 0.35; // تسارع إضافي كل ما اقتربت من نهاية المرحلة نفسها
-const CAMERA_HEIGHT = 4.3; // أبعد وأعلى — يوضّح إن الجيش ثابت والعالم هو اللي يتحرك نحوه
-const CAMERA_BACK_OFFSET = 6.2;
+const CAMERA_HEIGHT = 7.4; // زاوية أميل للأسفل (top-down أكثر) زي المرجع — تكشف الطريق قدامك أبعد
+const CAMERA_BACK_OFFSET = 4.8;
+const CAMERA_LOOKAHEAD = 3.2; // نقطة النظر قريبة نسبيًا عشان الزاوية تصير حادة
 const CAMERA_LERP = 0.22; // كاميرا أسرع استجابة = تحكم أدق وأسرع
 const OBSTACLE_WARNING_RANGE = 4; // إنذار أقصر = وقت رد فعل أقل
 const DRAG_SENSITIVITY = 0.014;
@@ -52,9 +53,9 @@ export class GamePlay {
         <div class="gp-top-center">
           <div class="gp-level-label">المرحلة ${this.level}</div>
           <div class="gp-progress"><div class="gp-progress__fill" id="gp-progress-fill"></div></div>
+          <div class="gp-obstacle-warning" id="gp-obstacle-warning"></div>
         </div>
         <button class="gp-pause-btn" id="gp-pause-btn" aria-label="إيقاف مؤقت">❚❚</button>
-        <div class="gp-obstacle-warning" id="gp-obstacle-warning"></div>
         <div class="gp-weapon-tag" id="gp-weapon-tag"></div>
         <div class="gp-shield" id="gp-shield">🛡️</div>
       </div>
@@ -234,7 +235,7 @@ export class GamePlay {
     this.camera.position.x = this.camX + this.shaker.state.x;
     this.camera.position.y = CAMERA_HEIGHT + this.shaker.state.y;
     this.camera.position.z = this.army.z + CAMERA_BACK_OFFSET;
-    this.camera.lookAt(this.camX * 0.4, 1.1, this.army.z - 7);
+    this.camera.lookAt(this.camX * 0.4, 0.8, this.army.z - CAMERA_LOOKAHEAD);
   }
 
   updateProgressBar() {
@@ -243,17 +244,18 @@ export class GamePlay {
   }
 
   updateObstacleWarning() {
-    const upcoming = this.levelData.segments.find(
-      (s) => s.type === 'obstacle' && !s.triggered && s.y - this.distance > 0 && s.y - this.distance < OBSTACLE_WARNING_RANGE
-    );
+    // نبين عتبة أقرب عائق قادم بشكل دائم (زي شريط +0/-10/25 بالمرجع)، مو بس لما يقرب
+    const upcoming = this.levelData.segments.find((s) => s.type === 'obstacle' && !s.triggered);
     if (upcoming) {
       const ok = this.army.count >= upcoming.threshold;
-      this.el.obstacleWarning.textContent = `⚠️ يحتاج ${upcoming.threshold}+ جندي`;
+      const close = upcoming.y - this.distance < OBSTACLE_WARNING_RANGE;
+      this.el.obstacleWarning.textContent = `🛢️ ${upcoming.threshold}+`;
       this.el.obstacleWarning.classList.toggle('ok', ok);
       this.el.obstacleWarning.classList.toggle('danger', !ok);
-      this.el.obstacleWarning.style.opacity = '1';
+      this.el.obstacleWarning.classList.add('visible');
+      this.el.obstacleWarning.classList.toggle('pulse', close);
     } else {
-      this.el.obstacleWarning.style.opacity = '0';
+      this.el.obstacleWarning.classList.remove('visible');
     }
   }
 

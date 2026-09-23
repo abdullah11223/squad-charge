@@ -25,6 +25,19 @@ function buildWindowTexture(seed) {
   return tex;
 }
 
+function buildGlowTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 32;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 32, 32);
+  return new THREE.CanvasTexture(canvas);
+}
+
 function buildLaneTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 64;
@@ -103,6 +116,30 @@ export class RoadBuilder {
         this.buildings.push(building);
       }
     }
+
+    // شرر/ذرات عائمة خفيفة بامتداد الطريق لإحساس حركة مستمر بالمشهد
+    this.motes = [];
+    const moteTex = buildGlowTexture();
+    const moteMat = new THREE.SpriteMaterial({
+      map: moteTex,
+      color: 0xffe9a8,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+    });
+    this.moteSpacing = 3.5;
+    const moteCount = 24;
+    for (let i = 0; i < moteCount; i++) {
+      const sprite = new THREE.Sprite(moteMat);
+      const scale = 0.08 + ((i * 13) % 5) * 0.02;
+      sprite.scale.set(scale, scale, 1);
+      sprite.userData.x = (((i * 71) % 100) / 100 - 0.5) * ROAD_WIDTH * 0.85;
+      sprite.userData.baseY = 0.3 + ((i * 37) % 100) / 100 * 2;
+      sprite.userData.phase = i * 0.7;
+      sprite.position.set(sprite.userData.x, sprite.userData.baseY, -i * this.moteSpacing);
+      scene.add(sprite);
+      this.motes.push(sprite);
+    }
   }
 
   update(distance) {
@@ -123,5 +160,11 @@ export class RoadBuilder {
       this.buildings[i * 2].position.z = z;
       this.buildings[i * 2 + 1].position.z = z;
     }
+
+    const moteMod = distance % this.moteSpacing;
+    this.motes.forEach((sprite, i) => {
+      sprite.position.z = -(i * this.moteSpacing - moteMod);
+      sprite.position.y = sprite.userData.baseY + Math.sin(distance * 0.6 + sprite.userData.phase) * 0.25;
+    });
   }
 }

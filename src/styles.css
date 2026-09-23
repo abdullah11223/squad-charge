@@ -368,20 +368,24 @@ html, body {
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 .gp-obstacle-warning {
-  position: absolute;
-  bottom: 78px;
-  left: 50%;
-  transform: translateX(-50%);
   font-weight: 800;
-  font-size: 14px;
-  padding: 6px 14px;
+  font-size: 13px;
+  padding: 5px 14px;
   border-radius: 999px;
-  background: rgba(0,0,0,0.45);
+  color: #fff;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.3);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transform: scale(0.85);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
 }
-.gp-obstacle-warning.ok { color: var(--success); }
-.gp-obstacle-warning.danger { color: var(--danger); }
+.gp-obstacle-warning.ok { background: linear-gradient(180deg, #3ddad0, var(--success-dark)); }
+.gp-obstacle-warning.danger { background: linear-gradient(180deg, #ff7a86, var(--danger-dark)); }
+.gp-obstacle-warning.visible { opacity: 1; transform: scale(1); }
+.gp-obstacle-warning.pulse { animation: gp-obstacle-pulse 0.6s ease-in-out infinite; }
+@keyframes gp-obstacle-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
 .gp-shield {
   position: absolute;
   top: 108px;

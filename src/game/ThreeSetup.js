@@ -27,9 +27,9 @@ function buildSkyTexture() {
 export function createThreeScene(container) {
   const scene = new THREE.Scene();
   scene.background = buildSkyTexture();
-  scene.fog = new THREE.Fog(COLORS3D.fog, 12, 28);
+  scene.fog = new THREE.Fog(COLORS3D.fog, 16, 38);
 
-  const camera = new THREE.PerspectiveCamera(47, container.clientWidth / container.clientHeight, 0.1, 70);
+  const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 80);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
