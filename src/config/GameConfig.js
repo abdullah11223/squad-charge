@@ -32,7 +32,7 @@ export function weaponTier(level) {
 export const DIFFICULTY = {
   enemyCount: (L) => 5 + L * 2,
   enemyDamage: (L) => 1 + Math.floor(L / 3),
-  obstacleThreshold: (L) => 20 + L * 5,
+  obstacleThreshold: (L) => 6 + L * 4,
   gateGroupCount: (L) => 3 + Math.floor(L / 5),
   harshGateChance: (L) => Math.min(0.25, (L / 25) * 0.25),
 };

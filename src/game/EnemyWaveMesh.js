@@ -50,31 +50,28 @@ export class EnemyWaveMesh {
     this.figures.forEach((fig) => animateWalk(fig, this.time, 6));
   }
 
-  playDefeatEffect(onComplete) {
-    const start = performance.now();
-    const duration = 260;
-    const animate = () => {
-      const t = Math.min(1, (performance.now() - start) / duration);
-      this.group.scale.setScalar(1 + t * 0.2);
-      this.figures.forEach((fig) => {
+  // يقتل عدد من الشخصيات المرئية بشكل تدريجي (سقوط + تلاشي) — يُستخدم أثناء تبادل إطلاق النار
+  killFigures(n) {
+    const toKill = this.figures.splice(0, Math.min(n, this.figures.length));
+    toKill.forEach((fig) => {
+      const start = performance.now();
+      const duration = 220 + Math.random() * 90;
+      const fallDir = Math.random() < 0.5 ? -1 : 1;
+      fig.traverse((o) => {
+        if (o.isMesh) o.material.transparent = true;
+      });
+      const animate = () => {
+        const t = Math.min(1, (performance.now() - start) / duration);
+        fig.rotation.z = fallDir * t * 1.3;
+        fig.position.y = -t * 0.35;
         fig.traverse((o) => {
           if (o.isMesh) o.material.opacity = 1 - t;
         });
-      });
-      if (t < 1) requestAnimationFrame(animate);
-      else {
-        this.destroy();
-        if (onComplete) onComplete();
-      }
-    };
-    this.figures.forEach((fig) =>
-      fig.traverse((o) => {
-        if (o.isMesh) {
-          o.material.transparent = true;
-        }
-      })
-    );
-    requestAnimationFrame(animate);
+        if (t < 1) requestAnimationFrame(animate);
+        else this.group.remove(fig);
+      };
+      requestAnimationFrame(animate);
+    });
   }
 
   destroy() {

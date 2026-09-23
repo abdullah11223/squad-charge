@@ -22,11 +22,14 @@ import {
   clamp,
 } from '../config/GameConfig.js';
 
-const BASE_SCROLL_SPEED = 3.1; // وحدات عالم/ثانية
+const BASE_SCROLL_SPEED = 4.2; // وحدات عالم/ثانية
 const CAMERA_HEIGHT = 3.4;
 const CAMERA_BACK_OFFSET = 4.6;
 const OBSTACLE_WARNING_RANGE = 5.5;
 const DRAG_SENSITIVITY = 0.013;
+const ENEMY_ENGAGE_RANGE = 6.5; // الجنود يبدأون يطلقون على العدو من هالمسافة، قبل ما يوصلونه
+const FIREFIGHT_BURSTS = 5;
+const FIREFIGHT_BURST_INTERVAL = 130; // ms
 
 export class GamePlay {
   constructor(root, level, callbacks) {
@@ -250,7 +253,9 @@ export class GamePlay {
 
   checkTriggers() {
     this.levelData.segments.forEach((seg, idx) => {
-      if (!seg.triggered && seg.y <= this.distance) {
+      if (seg.triggered) return;
+      const range = seg.type === 'enemyWave' ? ENEMY_ENGAGE_RANGE : 0;
+      if (seg.y - this.distance <= range) {
         seg.triggered = true;
         this.resolveSegment(seg, this.segmentVisuals[idx]);
       }
@@ -348,14 +353,43 @@ export class GamePlay {
   resolveEnemy(seg, visual) {
     const damage = this.army.damage * this.mergeDamageMult;
     const result = resolveEngagement(this.army.count, damage, seg.count, seg.unitDamage);
+    const totalFigures = visual.figures.length;
+    const killPerBurst = Math.max(1, Math.ceil(totalFigures / FIREFIGHT_BURSTS));
 
-    const fromPos = new THREE.Vector3(this.army.x, 0.9, this.army.z);
-    const toPos = new THREE.Vector3(this.army.x, 0.9, visual.group.position.z);
-    muzzleFlashTracers(this.scene, fromPos, toPos, seg.isBoss ? 14 : 8);
+    let burst = 0;
+    const fireBurst = () => {
+      if (this.destroyed) return;
+      const fromPos = new THREE.Vector3(this.army.x, 0.9, this.army.z);
+      const toPos = new THREE.Vector3(this.army.x, 0.9, visual.group.position.z);
+
+      if (result.victory) {
+        // الجيش يقوى ويطلق على العدو — يموتون تدريجيًا قبل ما توصلهم
+        muzzleFlashTracers(this.scene, fromPos, toPos, seg.isBoss ? 12 : 7);
+        if (visual.figures.length > 0) {
+          visual.killFigures(killPerBurst);
+          setTimeout(() => impactBurst(this.scene, toPos, 0xffcc55), 70);
+        }
+      } else {
+        // العدو أقوى — يطلقون هم على الجيش
+        muzzleFlashTracers(this.scene, toPos, fromPos, seg.isBoss ? 12 : 7);
+        this.army.flashHit();
+      }
+
+      burst++;
+      if (burst < FIREFIGHT_BURSTS) {
+        setTimeout(fireBurst, FIREFIGHT_BURST_INTERVAL);
+      } else {
+        this.finishEnemyEncounter(seg, visual, result);
+      }
+    };
+
+    fireBurst();
+  }
+
+  finishEnemyEncounter(seg, visual, result) {
+    visual.destroy();
 
     if (result.victory) {
-      setTimeout(() => impactBurst(this.scene, toPos, 0xffcc55), 90);
-      visual.playDefeatEffect();
       const lost = this.consumeLossWithShield(result.soldiersLost);
       if (lost) {
         this.registerLoss(lost);
@@ -370,8 +404,6 @@ export class GamePlay {
       this.shieldActive = false;
       this.showShieldBreak();
       this.el.shield.style.display = 'none';
-      setTimeout(() => impactBurst(this.scene, toPos, 0xffcc55), 90);
-      visual.playDefeatEffect();
       const survivors = Math.max(1, Math.ceil(this.army.count * 0.5));
       this.registerLoss(this.army.count - survivors);
       this.army.setCount(survivors);
@@ -379,8 +411,6 @@ export class GamePlay {
       return;
     }
 
-    visual.playDefeatEffect();
-    this.army.flashHit();
     this.registerLoss(this.army.count);
     this.army.setCount(0);
     this.shaker.trigger(0.25, 0.4);
