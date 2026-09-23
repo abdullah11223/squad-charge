@@ -136,11 +136,12 @@ export function generateLevel(L) {
     kinds.unshift('gate');
   }
 
+  // "y" هنا مسافة بوحدات العالم ثلاثي الأبعاد (محور Z) وليست بكسل
   const segments = [];
-  let y = 900;
+  let y = 18;
 
   for (const kind of kinds) {
-    y += 480 + Math.floor(rng() * 260);
+    y += 9.5 + rng() * 5.5;
     if (kind === 'gate') {
       segments.push(buildGateGroup(rng, harshChance, y));
     } else if (kind === 'enemy') {
@@ -151,11 +152,11 @@ export function generateLevel(L) {
   }
 
   if (isBossLevel) {
-    y += 700;
+    y += 14;
     segments.push(buildEnemyWave(totalEnemies * 2, enemyDamage * 3, y, true));
   }
 
-  y += 650;
+  y += 13;
   const finishY = y;
 
   return {

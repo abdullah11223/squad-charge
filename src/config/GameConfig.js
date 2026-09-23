@@ -1,13 +1,12 @@
 // جدول مستويات الأسلحة والإعدادات العامة للعبة (القسم ٣ و١٠ من المواصفات)
 
-export const CANVAS_WIDTH = 480;
-export const CANVAS_HEIGHT = 854;
+export function clamp(v, min, max) {
+  return Math.min(max, Math.max(min, v));
+}
 
-export const ROAD_WIDTH = 400;
-export const ROAD_LEFT = (CANVAS_WIDTH - ROAD_WIDTH) / 2;
-export const ROAD_RIGHT = ROAD_LEFT + ROAD_WIDTH;
-
-export const ARMY_SCREEN_Y = Math.round(CANVAS_HEIGHT * 0.74);
+// عرض الطريق بوحدات العالم ثلاثي الأبعاد (وليس بكسل)
+export const ROAD_WIDTH = 6;
+export const ROAD_HALF = ROAD_WIDTH / 2;
 
 export const TOTAL_LEVELS = 25;
 export const BOSS_LEVEL_INTERVAL = 5;
@@ -26,7 +25,7 @@ export const WEAPON_TIERS = [
 ];
 
 export function weaponTier(level) {
-  const clamped = Phaser.Math.Clamp(level, 1, WEAPON_TIERS.length);
+  const clamped = clamp(level, 1, WEAPON_TIERS.length);
   return WEAPON_TIERS[clamped - 1];
 }
 
@@ -99,33 +98,24 @@ export function shopUpgradePrice(upgradeId, currentLevel) {
   return Math.round(cfg.basePrice * Math.pow(cfg.priceMult, currentLevel));
 }
 
-export const COLORS = {
-  bg: 0x1b1d2b,
-  panel: 0x262a3f,
-  road: 0x3a3d5c,
-  roadEdge: 0x252842,
-  roadLine: 0x4a4e73,
-  armyBlue: 0x4cc9f0,
-  soldier: 0x8ecae6,
-  soldierOutline: 0x1b1d2b,
-  enemy: 0xe76f51,
-  enemyOutline: 0x5c1f10,
-  boss: 0x9b2226,
+// ألوان المشهد ثلاثي الأبعاد (Three.js hex numbers)
+export const COLORS3D = {
+  sky: 0x6fb8e0,
+  fog: 0x8fc7e6,
+  road: 0x555a72,
+  roadLine: 0xe8e8f0,
+  rail: 0x8d8f9c,
+  armyBody: 0xf3f3f3,
+  armyPants: 0x2b2d42,
+  skin: 0xffd9b0,
+  enemyBody: 0xf3e3d6,
+  enemyAccent: 0xe63946,
+  bossAccent: 0x6a0f13,
   gateBlue: 0x4361ee,
   gateRed: 0xe63946,
-  obstacle: 0x774936,
-  text: '#ffffff',
-  textDim: '#b8bcd4',
-  gold: '#ffd60a',
-  danger: '#ff595e',
-  success: '#2ec4b6',
-
-  // نسخ رقمية (hex number) من نفس الألوان أعلاه — تُستخدم مع Graphics/Rectangle
-  // بينما النسخ النصية (CSS string) تُستخدم مع Phaser.Text
-  textDimNum: 0xb8bcd4,
-  goldNum: 0xffd60a,
-  dangerNum: 0xff595e,
-  successNum: 0x2ec4b6,
+  obstacle: 0x8a5a34,
+  obstacleBand: 0x3d2410,
+  gold: 0xffd60a,
 };
 
 export const STORAGE_KEY = 'squadCharge_save_v1';
