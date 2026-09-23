@@ -26,8 +26,8 @@ const BASE_SCROLL_SPEED = 4.8; // وحدات عالم/ثانية عند المر
 const SPEED_PER_LEVEL = 0.14; // تزيد السرعة الأساسية كل مرحلة — تحدي متصاعد
 const MAX_LEVEL_SPEED_BONUS = 3.4;
 const IN_LEVEL_RAMP = 0.35; // تسارع إضافي كل ما اقتربت من نهاية المرحلة نفسها
-const CAMERA_HEIGHT = 3.1;
-const CAMERA_BACK_OFFSET = 4.2;
+const CAMERA_HEIGHT = 4.3; // أبعد وأعلى — يوضّح إن الجيش ثابت والعالم هو اللي يتحرك نحوه
+const CAMERA_BACK_OFFSET = 6.2;
 const CAMERA_LERP = 0.22; // كاميرا أسرع استجابة = تحكم أدق وأسرع
 const OBSTACLE_WARNING_RANGE = 4; // إنذار أقصر = وقت رد فعل أقل
 const DRAG_SENSITIVITY = 0.014;
