@@ -3,6 +3,28 @@
 import * as THREE from 'three';
 import { ROAD_WIDTH, ROAD_HALF, COLORS3D } from '../config/GameConfig.js';
 
+function buildWindowTexture(seed) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#2a3352';
+  ctx.fillRect(0, 0, 32, 64);
+  let s = seed;
+  const rand = () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+  for (let y = 4; y < 60; y += 8) {
+    for (let x = 4; x < 28; x += 8) {
+      ctx.fillStyle = rand() < 0.55 ? '#ffe9a8' : '#1c2440';
+      ctx.fillRect(x, y, 4, 5);
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  return tex;
+}
+
 function buildLaneTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 64;
@@ -58,16 +80,48 @@ export class RoadBuilder {
         this.posts.push(post);
       }
     }
+
+    // أفق مبانٍ بسيط على جانبي الطريق لإحساس بيئة حقيقية (مدينة بعيدة)
+    this.buildingSpacing = 9;
+    this.buildings = [];
+    const buildingCount = 22;
+    for (let i = 0; i < buildingCount; i++) {
+      for (const side of [-1, 1]) {
+        const width = 2.2 + ((i * 37) % 5) * 0.5;
+        const height = 3 + ((i * 53 + (side > 0 ? 17 : 0)) % 9);
+        const depth = 2.2 + ((i * 19) % 3) * 0.4;
+        const geo = new THREE.BoxGeometry(width, height, depth);
+        const mat = new THREE.MeshStandardMaterial({
+          map: buildWindowTexture(i * 97 + (side > 0 ? 13 : 1)),
+          roughness: 0.9,
+        });
+        const building = new THREE.Mesh(geo, mat);
+        building.position.set(side * (ROAD_HALF + 3.5 + width / 2), height / 2, -i * this.buildingSpacing);
+        building.castShadow = false;
+        building.receiveShadow = false;
+        scene.add(building);
+        this.buildings.push(building);
+      }
+    }
   }
 
   update(distance) {
     this.texture.offset.y = distance * 0.14;
-    const mod = distance % this.postSpacing;
-    const pairCount = this.posts.length / 2;
-    for (let i = 0; i < pairCount; i++) {
-      const z = -(i * this.postSpacing - mod);
+
+    const postMod = distance % this.postSpacing;
+    const postPairCount = this.posts.length / 2;
+    for (let i = 0; i < postPairCount; i++) {
+      const z = -(i * this.postSpacing - postMod);
       this.posts[i * 2].position.z = z;
       this.posts[i * 2 + 1].position.z = z;
+    }
+
+    const buildingMod = distance % this.buildingSpacing;
+    const buildingPairCount = this.buildings.length / 2;
+    for (let i = 0; i < buildingPairCount; i++) {
+      const z = -(i * this.buildingSpacing - buildingMod);
+      this.buildings[i * 2].position.z = z;
+      this.buildings[i * 2 + 1].position.z = z;
     }
   }
 }

@@ -77,10 +77,11 @@ export class GamePlay {
       menuBtn: this.root.querySelector('#gp-menu-btn'),
     };
 
-    const { scene, camera, renderer, resizeObserver } = createThreeScene(this.canvasContainer);
+    const { scene, camera, renderer, composer, resizeObserver } = createThreeScene(this.canvasContainer);
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
+    this.composer = composer;
     this.resizeObserver = resizeObserver;
     this.shaker = createShaker();
 
@@ -194,7 +195,7 @@ export class GamePlay {
     if (!this.paused && !this.finished) {
       this.update(dt);
     }
-    this.renderer.render(this.scene, this.camera);
+    this.composer.render();
   }
 
   update(dt) {

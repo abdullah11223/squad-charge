@@ -7,11 +7,11 @@ let gradientMap = null;
 function getGradientMap() {
   if (gradientMap) return gradientMap;
   const canvas = document.createElement('canvas');
-  canvas.width = 4;
+  canvas.width = 5;
   canvas.height = 1;
   const ctx = canvas.getContext('2d');
-  const shades = [70, 140, 200, 255];
-  for (let i = 0; i < 4; i++) {
+  const shades = [55, 110, 165, 210, 255];
+  for (let i = 0; i < shades.length; i++) {
     ctx.fillStyle = `rgb(${shades[i]},${shades[i]},${shades[i]})`;
     ctx.fillRect(i, 0, 1, 1);
   }
@@ -25,28 +25,53 @@ function toonMat(color) {
   return new THREE.MeshToonMaterial({ color, gradientMap: getGradientMap() });
 }
 
+const OUTLINE_COLOR = 0x14151f;
+function outlineMat() {
+  return new THREE.MeshBasicMaterial({ color: OUTLINE_COLOR, side: THREE.BackSide });
+}
+
+function addOutline(mesh, scale = 1.07) {
+  const outline = new THREE.Mesh(mesh.geometry, outlineMat());
+  outline.scale.setScalar(scale);
+  mesh.add(outline);
+}
+
 const bodyGeo = new THREE.CapsuleGeometry(0.26, 0.4, 4, 8);
-const headGeo = new THREE.SphereGeometry(0.25, 10, 8);
-const helmetGeo = new THREE.SphereGeometry(0.27, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.55);
+const headGeo = new THREE.SphereGeometry(0.25, 12, 10);
+const helmetGeo = new THREE.SphereGeometry(0.27, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55);
 const legGeo = new THREE.CylinderGeometry(0.085, 0.085, 0.44, 6);
 const armGeo = new THREE.CylinderGeometry(0.065, 0.065, 0.34, 6);
+const packGeo = new THREE.BoxGeometry(0.22, 0.28, 0.14);
+const gunGeo = new THREE.BoxGeometry(0.07, 0.07, 0.42);
+
+function jitter(hex, range = 0.05) {
+  const c = new THREE.Color(hex);
+  c.offsetHSL(0, 0, (Math.random() - 0.5) * range);
+  return c;
+}
 
 export function createCharacter({ bodyColor = 0xffffff, accentColor = 0x4361ee, pantsColor = 0x2b2d42, skinColor = 0xffd9b0 } = {}) {
   const group = new THREE.Group();
 
-  const body = new THREE.Mesh(bodyGeo, toonMat(bodyColor));
+  const body = new THREE.Mesh(bodyGeo, toonMat(jitter(bodyColor)));
   body.position.y = 0.52;
+  addOutline(body, 1.08);
   group.add(body);
+
+  const pack = new THREE.Mesh(packGeo, toonMat(jitter(pantsColor, 0.03)));
+  pack.position.set(0, 0.58, -0.22);
+  group.add(pack);
 
   const head = new THREE.Mesh(headGeo, toonMat(skinColor));
   head.position.y = 1.0;
+  addOutline(head, 1.1);
   group.add(head);
 
   const helmet = new THREE.Mesh(helmetGeo, toonMat(accentColor));
   helmet.position.y = 1.03;
   group.add(helmet);
 
-  const armL = new THREE.Mesh(armGeo, toonMat(bodyColor));
+  const armL = new THREE.Mesh(armGeo, toonMat(jitter(bodyColor)));
   armL.position.set(-0.32, 0.58, 0);
   armL.rotation.z = 0.25;
   const armR = armL.clone();
@@ -54,11 +79,16 @@ export function createCharacter({ bodyColor = 0xffffff, accentColor = 0x4361ee, 
   armR.rotation.z = -0.25;
   group.add(armL, armR);
 
-  const legL = new THREE.Mesh(legGeo, toonMat(pantsColor));
-  legL.position.set(-0.12, 0.2, 0);
-  const legR = legL.clone();
-  legR.position.x = 0.12;
-  group.add(legL, legR);
+  const gun = new THREE.Mesh(gunGeo, toonMat(0x3a3d46));
+  gun.position.set(0.36, 0.5, 0.16);
+  gun.rotation.y = 0.3;
+  group.add(gun);
+
+  const legGroupL = new THREE.Mesh(legGeo, toonMat(jitter(pantsColor)));
+  legGroupL.position.set(-0.12, 0.2, 0);
+  const legGroupR = legGroupL.clone();
+  legGroupR.position.x = 0.12;
+  group.add(legGroupL, legGroupR);
 
   group.traverse((obj) => {
     if (obj.isMesh) {
@@ -67,7 +97,7 @@ export function createCharacter({ bodyColor = 0xffffff, accentColor = 0x4361ee, 
     }
   });
 
-  group.userData.legs = [legL, legR];
+  group.userData.legs = [legGroupL, legGroupR];
   group.userData.arms = [armL, armR];
   group.userData.helmet = helmet;
   group.userData.body = body;
@@ -91,6 +121,8 @@ export function animateWalk(character, t, speed = 8) {
   armL.rotation.x = -swing * 0.8;
   armR.rotation.x = swing * 0.8;
   character.position.y = Math.abs(Math.sin(phase)) * 0.035;
+  character.rotation.z = Math.sin(phase * 2) * 0.03;
+  character.userData.helmet.rotation.y = Math.sin(phase * 0.5) * 0.15;
 }
 
 export function layoutFormation(count, cap, spacing, maxCols = 6) {
